@@ -1,4 +1,5 @@
 mod age;
+mod mrs;
 
 use anyhow;
 use chrono::TimeZone;
@@ -14,12 +15,17 @@ fn main() -> Res<()> {
         .version("1.0")
         .author("Dan Farino")
         .about("Dan's Rust-based Git utility")
-        .subcommand(App::new("rb").about("Shows recently-used branches by looking at the reflog"));
+        .subcommand(App::new("rb").about("Shows recently-used branches by looking at the reflog"))
+        .subcommand(App::new("mrs").about("Multi-repo status"));
 
     let matches = app.clone().get_matches();
 
     if let Some(_) = matches.subcommand_matches("rb") {
         return command_rb();
+    }
+
+    if let Some(_) = matches.subcommand_matches("mrs") {
+        return mrs::command_multi_repo_status();
     }
 
     app.print_help().unwrap();
