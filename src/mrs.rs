@@ -1,3 +1,4 @@
+use crate::Res;
 use git2::{Branch, BranchType, ErrorCode, Repository, StatusOptions};
 use glob::glob;
 use std::collections::HashSet;
@@ -5,10 +6,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-type Res<T> = anyhow::Result<T>;
-
 pub fn command_multi_repo_status() -> Res<()> {
-    let enable_ansi_colors =  atty::is(atty::Stream::Stdout);
+    let enable_ansi_colors = atty::is(atty::Stream::Stdout);
 
     let homedir = dirs::home_dir().ok_or(anyhow::anyhow!("cannot locate user home dir"))?;
     let homedir_display = homedir
