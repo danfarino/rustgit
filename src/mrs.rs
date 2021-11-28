@@ -16,7 +16,9 @@ pub fn command_multi_repo_status() -> Res<()> {
         .trim_end_matches("/")
         .to_string();
 
-    let config_contents = fs::read_to_string(homedir.join(".rustgitrc"))?;
+    let config_path = homedir.join(".rustgitrc");
+    let config_contents = fs::read_to_string(&config_path)
+        .map_err(|e| anyhow::anyhow!("cannot open {}: {}", &config_path.display(), e))?;
 
     let mut repos_paths = Vec::new();
 
