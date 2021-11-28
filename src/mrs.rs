@@ -1,4 +1,4 @@
-use crate::Res;
+use crate::{Res, Verbosity};
 use git2::{Branch, BranchType, ErrorCode, Repository, StatusOptions};
 use glob::glob;
 use std::collections::HashSet;
@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
-pub fn command_multi_repo_status() -> Res<()> {
+pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
     let enable_ansi_colors = atty::is(atty::Stream::Stdout);
 
     let homedir = dirs::home_dir().ok_or(anyhow::anyhow!("cannot locate user home dir"))?;
@@ -42,6 +42,10 @@ pub fn command_multi_repo_status() -> Res<()> {
     repos_paths.dedup();
 
     for repo_path in &repos_paths {
+        if verbosity >= Verbosity::Info {
+            println!("Checking repo: {}", &repo_path.display());
+        }
+
         let res = process_repo(repo_path);
         if let Err(e) = res {
             let (ansi1, ansi2) = if enable_ansi_colors {
