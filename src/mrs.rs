@@ -1,7 +1,7 @@
 use crate::{Res, Verbosity};
 use git2::{Branch, BranchType, ErrorCode, Repository, StatusOptions};
 use glob::glob;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -46,7 +46,7 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
             println!("Checking repo: {}", &repo_path.display());
         }
 
-        let res = process_repo(repo_path);
+        let res = process_repo(repo_path, verbosity);
         if let Err(e) = res {
             let (ansi1, ansi2) = if enable_ansi_colors {
                 ("\x1b[31;1m", "\x1b[m")
@@ -115,7 +115,7 @@ struct RepoInfo {
     unpushed_branches: Vec<String>,
 }
 
-fn process_repo(repo_path: &PathBuf) -> Res<RepoInfo> {
+fn process_repo(repo_path: &PathBuf, verbosity: Verbosity) -> Res<RepoInfo> {
     let repo = Repository::discover(repo_path).map_err(|e| match e.code() {
         ErrorCode::NotFound => anyhow::anyhow!("not a Git repo: {}", repo_path.display()),
         _ => anyhow::Error::from(e),
@@ -129,23 +129,50 @@ fn process_repo(repo_path: &PathBuf) -> Res<RepoInfo> {
         unpushed_branches: Vec::new(),
     };
 
-    let mut remote_sha1s = HashSet::new();
+    let mut remote_oids = HashMap::new();
     let remote_branches = repo.branches(Some(BranchType::Remote))?;
     for res in remote_branches {
         let (branch, _) = res?;
-        let sha1 = branch.get().peel_to_commit()?.id().to_string();
-        remote_sha1s.insert(sha1);
+        let branch_name = branch_to_string(&branch)?;
+        let oid = branch.get().peel_to_commit()?.id();
+        remote_oids.insert(oid, branch_name);
     }
 
     let local_branches = repo.branches(Some(BranchType::Local))?;
-    for res in local_branches {
+    'local_branches: for res in local_branches {
         let (branch, _) = res?;
         let branch_name = branch_to_string(&branch)?;
-        let sha1 = branch.get().peel_to_commit()?.id().to_string();
+        let oid = branch.get().peel_to_commit()?.id();
 
-        if !remote_sha1s.contains(sha1.as_str()) {
-            repo_info.unpushed_branches.push(branch_name.to_string());
+        if verbosity >= Verbosity::Debug {
+            println!("  considering branch {} {}", branch_name, oid)
         }
+
+        if let Some(remote_branch_name) = remote_oids.get(&oid) {
+            if verbosity >= Verbosity::Debug {
+                println!("  matches {}", remote_branch_name);
+            }
+            continue;
+        }
+
+        if verbosity >= Verbosity::Debug {
+            println!("looking for {} {}", branch_name, oid);
+        }
+
+        for (remote_oid, remote_branch_name) in &remote_oids {
+            let (ahead, behind) = repo.graph_ahead_behind(oid, *remote_oid)?;
+            if verbosity >= Verbosity::Debug {
+                println!(
+                    "  {} {} ahead={} behind={}",
+                    remote_oid, remote_branch_name, ahead, behind
+                );
+            }
+            if ahead == 0 {
+                continue 'local_branches;
+            }
+        }
+
+        repo_info.unpushed_branches.push(branch_name.to_string());
     }
 
     Ok(repo_info)

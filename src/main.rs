@@ -6,7 +6,7 @@ use clap::{App, Arg};
 
 pub type Res<T> = anyhow::Result<T>;
 
-#[derive(PartialOrd, PartialEq)]
+#[derive(Copy, Clone, PartialOrd, PartialEq)]
 pub enum Verbosity {
     Normal = 0,
     Info,
