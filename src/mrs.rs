@@ -123,7 +123,7 @@ fn process_repo(repo_path: &PathBuf) -> Res<RepoInfo> {
 
     let statuses = repo.statuses(Some(StatusOptions::new().include_untracked(true)))?;
 
-    let mut unpushed = RepoInfo {
+    let mut repo_info = RepoInfo {
         repo_path: repo_path.to_path_buf(),
         dirty: !statuses.is_empty(),
         unpushed_branches: Vec::new(),
@@ -144,11 +144,11 @@ fn process_repo(repo_path: &PathBuf) -> Res<RepoInfo> {
         let sha1 = branch.get().peel_to_commit()?.id().to_string();
 
         if !remote_sha1s.contains(sha1.as_str()) {
-            unpushed.unpushed_branches.push(branch_name.to_string());
+            repo_info.unpushed_branches.push(branch_name.to_string());
         }
     }
 
-    Ok(unpushed)
+    Ok(repo_info)
 }
 
 fn branch_to_string(branch: &Branch) -> Res<String> {
