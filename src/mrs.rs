@@ -3,38 +3,32 @@ use git2::{Branch, BranchType, ErrorCode, Repository, StatusOptions};
 use glob::glob;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
     let enable_ansi_colors = atty::is(atty::Stream::Stdout);
 
     let homedir = dirs::home_dir().ok_or(anyhow::anyhow!("cannot locate user home dir"))?;
-    let homedir_display = homedir
-        .display()
-        .to_string()
-        .trim_end_matches("/")
-        .to_string();
-
     let config_path = homedir.join(".rustgitrc");
     let config_contents = fs::read_to_string(&config_path)
-        .map_err(|e| anyhow::anyhow!("cannot open {}: {}", &config_path.display(), e))?;
+        .map_err(|e| anyhow::anyhow!("cannot open {:?}: {}", &config_path, e))?;
 
     let mut repos_paths = Vec::new();
 
     for config_line in config_contents.lines() {
-        let repo_glob = shellexpand::tilde(config_line).to_string();
+        let repo_glob = shellexpand::tilde(config_line);
 
         let mut matched = false;
 
-        for res in glob(&repo_glob)? {
+        for res in glob(repo_glob.as_ref())? {
             let path = res?;
             repos_paths.push(path);
             matched = true;
         }
 
         if !matched {
-            repos_paths.push(PathBuf::from(&repo_glob));
+            repos_paths.push(PathBuf::from(repo_glob.as_ref()));
         }
     }
 
@@ -43,7 +37,7 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
 
     for repo_path in &repos_paths {
         if verbosity >= Verbosity::Info {
-            println!("Checking repo: {}", &repo_path.display());
+            println!("Checking repo: {}", repo_path.display());
         }
 
         let res = process_repo(repo_path, verbosity);
@@ -70,11 +64,11 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
             ("", "")
         };
 
-        let mut repo_path_str = repo_info.repo_path.display().to_string();
-        if repo_path_str.starts_with(&homedir_display) {
-            repo_path_str = format!("~{}", &repo_path_str[homedir_display.len()..]);
+        let mut repo_path_display = repo_info.repo_path;
+        if let Ok(stripped) = repo_path.strip_prefix(&homedir) {
+            repo_path_display = PathBuf::from("~").join(stripped);
         }
-        println!("{}{}{}", ansi1, repo_path_str, ansi2);
+        println!("{}{}{}", ansi1, repo_path_display.display(), ansi2);
 
         if !repo_info.unpushed_branches.is_empty() {
             let mut cmd = Command::new("git");
@@ -115,7 +109,7 @@ struct RepoInfo {
     unpushed_branches: Vec<String>,
 }
 
-fn process_repo(repo_path: &PathBuf, verbosity: Verbosity) -> Res<RepoInfo> {
+fn process_repo(repo_path: &Path, verbosity: Verbosity) -> Res<RepoInfo> {
     let repo = Repository::discover(repo_path).map_err(|e| match e.code() {
         ErrorCode::NotFound => anyhow::anyhow!("not a Git repo: {}", repo_path.display()),
         _ => anyhow::Error::from(e),

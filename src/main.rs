@@ -1,7 +1,6 @@
 mod mrs;
 mod rb;
 
-use anyhow;
 use clap::{App, Arg};
 
 pub type Res<T> = anyhow::Result<T>;
@@ -30,7 +29,7 @@ fn main() -> Res<()> {
 
     let matches = app.clone().get_matches();
 
-    if let Some(_) = matches.subcommand_matches("rb") {
+    if matches.subcommand_matches("rb").is_some() {
         return rb::command_rb();
     }
 
