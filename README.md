@@ -51,7 +51,7 @@ This uses the Git reflog to produce its output. Since reflog entries expire afte
 
 ### Multi-repo status
 
-This command checks for a dirty-working directory and/or unpushed local branches in multiple repos.
+This command checks for a dirty working directory and/or unpushed local branches in multiple repos.
 
 First, create a file named `.rustgitrc` in your home directory. This file should contain a list of all of the repos you are interested in checking. You may use shell glob wildcards.
 
