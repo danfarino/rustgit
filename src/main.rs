@@ -16,7 +16,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() -> Res<()> {
     let mut app = App::new("rustgit")
-        .version("1.0")
+        .version(VERSION)
         .author("Dan Farino")
         .about("Dan's Rust-based Git utility")
         .subcommand(App::new("rb").about("Shows recently-used branches by looking at the reflog"))
@@ -27,15 +27,9 @@ fn main() -> Res<()> {
                     .short('v')
                     .multiple_occurrences(true),
             ),
-        )
-        .subcommand(App::new("version").about("Show version number"));
+        );
 
     let matches = app.clone().get_matches();
-
-    if matches.subcommand_matches("version").is_some() {
-        println!("{}", VERSION);
-        return Ok(());
-    }
 
     if matches.subcommand_matches("rb").is_some() {
         return rb::command_rb();
