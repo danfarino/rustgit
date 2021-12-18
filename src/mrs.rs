@@ -4,7 +4,7 @@ use glob::glob;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
     let enable_ansi_colors = atty::is(atty::Stream::Stdout);
@@ -77,8 +77,7 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
                 .arg(repo_path)
                 .arg("branch")
                 .arg("-vv")
-                .arg("--list")
-                .stdout(Stdio::inherit());
+                .arg("--list");
 
             for branch in &repo_info.unpushed_branches {
                 cmd.arg(branch);
@@ -94,7 +93,6 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
                 .arg(repo_path)
                 .arg("status")
                 .arg("--short")
-                .stdout(Stdio::inherit())
                 .spawn()?;
             child.wait()?;
         }
@@ -123,45 +121,51 @@ fn process_repo(repo_path: &Path, verbosity: Verbosity) -> Res<RepoInfo> {
         unpushed_branches: Vec::new(),
     };
 
-    let mut remote_oids = HashMap::new();
+    let mut remote_shas = HashMap::new();
     let remote_branches = repo.branches(Some(BranchType::Remote))?;
     for res in remote_branches {
         let (branch, _) = res?;
         let branch_name = branch_to_string(&branch)?;
-        let oid = branch.get().peel_to_commit()?.id();
-        remote_oids.insert(oid, branch_name);
+        let branch_head_sha = branch.get().peel_to_commit()?.id();
+        remote_shas.insert(branch_head_sha, branch_name);
     }
 
     let local_branches = repo.branches(Some(BranchType::Local))?;
     'local_branches: for res in local_branches {
         let (branch, _) = res?;
         let branch_name = branch_to_string(&branch)?;
-        let oid = branch.get().peel_to_commit()?.id();
+        let branch_head_sha = branch.get().peel_to_commit()?.id();
 
         if verbosity >= Verbosity::Debug {
-            println!("  considering branch {} {}", branch_name, oid)
+            println!(
+                "  considering local branch \"{}\" {}",
+                branch_name, branch_head_sha
+            )
         }
 
-        if let Some(remote_branch_name) = remote_oids.get(&oid) {
+        if let Some(remote_branch_name) = remote_shas.get(&branch_head_sha) {
             if verbosity >= Verbosity::Debug {
-                println!("  matches {}", remote_branch_name);
+                println!("    matches \"{}\"", remote_branch_name);
             }
             continue;
         }
 
         if verbosity >= Verbosity::Debug {
-            println!("looking for {} {}", branch_name, oid);
+            println!("    no remote branch at same commit");
         }
 
-        for (remote_oid, remote_branch_name) in &remote_oids {
-            let (ahead, behind) = repo.graph_ahead_behind(oid, *remote_oid)?;
+        for (remote_sha, remote_branch_name) in &remote_shas {
+            let (ahead, behind) = repo.graph_ahead_behind(branch_head_sha, *remote_sha)?;
             if verbosity >= Verbosity::Debug {
                 println!(
-                    "  {} {} ahead={} behind={}",
-                    remote_oid, remote_branch_name, ahead, behind
+                    "    checking {} \"{}\" ahead={} behind={}",
+                    remote_sha, remote_branch_name, ahead, behind
                 );
             }
             if ahead == 0 {
+                if verbosity >= Verbosity::Debug {
+                    println!("      found matching commit on {}", remote_branch_name);
+                }
                 continue 'local_branches;
             }
         }

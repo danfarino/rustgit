@@ -12,6 +12,8 @@ pub enum Verbosity {
     Debug,
 }
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 fn main() -> Res<()> {
     let mut app = App::new("rustgit")
         .version("1.0")
@@ -25,9 +27,15 @@ fn main() -> Res<()> {
                     .short('v')
                     .multiple_occurrences(true),
             ),
-        );
+        )
+        .subcommand(App::new("version").about("Show version number"));
 
     let matches = app.clone().get_matches();
+
+    if matches.subcommand_matches("version").is_some() {
+        println!("{}", VERSION);
+        return Ok(());
+    }
 
     if matches.subcommand_matches("rb").is_some() {
         return rb::command_rb();
