@@ -1,39 +1,47 @@
 use crate::{Res, Verbosity};
 use git2::{Branch, BranchType, ErrorCode, Repository, StatusOptions};
-use glob::glob;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
-    let enable_ansi_colors = atty::is(atty::Stream::Stdout);
-
     let homedir = dirs::home_dir().ok_or(anyhow::anyhow!("cannot locate user home dir"))?;
     let config_path = homedir.join(".rustgitrc");
-    let config_contents = fs::read_to_string(&config_path)
-        .map_err(|e| anyhow::anyhow!("cannot open {:?}: {}", &config_path, e))?;
+
+    let (exclude_rules, include_rules): (Vec<String>, Vec<String>) =
+        fs::read_to_string(&config_path)
+            .map_err(|e| anyhow::anyhow!("cannot open config file {:?}: {}", &config_path, e))?
+            .lines()
+            .filter(|s| !s.starts_with('#') && !s.trim().is_empty())
+            .map(String::from)
+            .partition(|s| s.starts_with('!'));
+
+    let mut exclude_patterns = Vec::new();
+    for exclude_rule in exclude_rules {
+        exclude_patterns.push(glob::Pattern::new(&shellexpand::tilde(&exclude_rule[1..]))?);
+    }
 
     let mut repos_paths = Vec::new();
+    for include_rule in include_rules {
+        for glob_result in glob::glob(&shellexpand::tilde(&include_rule))? {
+            let path = glob_result?;
 
-    for config_line in config_contents.lines() {
-        let repo_glob = shellexpand::tilde(config_line);
+            if exclude_patterns.iter().any(|p| p.matches_path(&path)) {
+                if verbosity >= Verbosity::Info {
+                    println!("Excluded dir: {:?}", &path);
+                }
+                continue;
+            }
 
-        let mut matched = false;
-
-        for res in glob(repo_glob.as_ref())? {
-            let path = res?;
             repos_paths.push(path);
-            matched = true;
-        }
-
-        if !matched {
-            repos_paths.push(PathBuf::from(repo_glob.as_ref()));
         }
     }
 
     repos_paths.sort();
     repos_paths.dedup();
+
+    let enable_ansi_colors = atty::is(atty::Stream::Stdout);
 
     for repo_path in &repos_paths {
         if verbosity >= Verbosity::Info {

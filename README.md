@@ -53,11 +53,13 @@ This uses the Git reflog to produce its output. Since reflog entries expire afte
 
 This command checks for a dirty working directory and/or unpushed local branches in multiple repos.
 
-First, create a file named `.rustgitrc` in your home directory. This file should contain a list of all of the repos you are interested in checking. You may use shell glob wildcards.
+First, create a file named `.rustgitrc` in your home directory. This file should contain a list of all of the repos you are interested in checking. You may use shell glob wildcards. If you prefix a line with `!`, any repos matching that pattern will be ignored. Blank lines, and lines starting with `#`, will be ignored.
 
 Example:
 ```
 ~/dev/github/me/*
+# Ignore this junk:
+!~/dev/github/me/junk*
 ~/dev/other
 ```
 
