@@ -178,7 +178,7 @@ fn process_repo(repo_path: &Path, verbosity: Verbosity) -> Res<RepoInfo> {
             }
         }
 
-        repo_info.unpushed_branches.push(branch_name.to_string());
+        repo_info.unpushed_branches.push(branch_name);
     }
 
     Ok(repo_info)
