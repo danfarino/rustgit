@@ -5,7 +5,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
+pub fn command_multi_repo_status(verbosity: Verbosity, only_show_dirs: bool) -> Res<()> {
     let homedir = dirs::home_dir().ok_or(anyhow::anyhow!("cannot locate user home dir"))?;
     let config_path = homedir.join(".rustgitrc");
 
@@ -66,7 +66,7 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
             continue;
         }
 
-        let (ansi1, ansi2) = if enable_ansi_colors {
+        let (ansi1, ansi2) = if enable_ansi_colors && !only_show_dirs {
             ("\x1b[33;1m", "\x1b[m")
         } else {
             ("", "")
@@ -78,31 +78,33 @@ pub fn command_multi_repo_status(verbosity: Verbosity) -> Res<()> {
         }
         println!("{}{}{}", ansi1, repo_path_display.display(), ansi2);
 
-        if !repo_info.unpushed_branches.is_empty() {
-            let mut cmd = Command::new("git");
+        if !only_show_dirs {
+            if !repo_info.unpushed_branches.is_empty() {
+                let mut cmd = Command::new("git");
 
-            cmd.arg("-C")
-                .arg(repo_path)
-                .arg("branch")
-                .arg("-vv")
-                .arg("--list");
+                cmd.arg("-C")
+                    .arg(repo_path)
+                    .arg("branch")
+                    .arg("-vv")
+                    .arg("--list");
 
-            for branch in &repo_info.unpushed_branches {
-                cmd.arg(branch);
+                for branch in &repo_info.unpushed_branches {
+                    cmd.arg(branch);
+                }
+
+                let mut child = cmd.spawn()?;
+                child.wait()?;
             }
 
-            let mut child = cmd.spawn()?;
-            child.wait()?;
-        }
-
-        if repo_info.dirty {
-            let mut child = Command::new("git")
-                .arg("-C")
-                .arg(repo_path)
-                .arg("status")
-                .arg("--short")
-                .spawn()?;
-            child.wait()?;
+            if repo_info.dirty {
+                let mut child = Command::new("git")
+                    .arg("-C")
+                    .arg(repo_path)
+                    .arg("status")
+                    .arg("--short")
+                    .spawn()?;
+                child.wait()?;
+            }
         }
     }
 

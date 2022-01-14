@@ -21,12 +21,19 @@ fn main() -> Res<()> {
         .about("Dan's Rust-based Git utility")
         .subcommand(App::new("rb").about("Shows recently-used branches by looking at the reflog"))
         .subcommand(
-            App::new("mrs").about("Multi-repo status").arg(
-                Arg::new("verbose")
-                    .long("verbose")
-                    .short('v')
-                    .multiple_occurrences(true),
-            ),
+            App::new("mrs")
+                .about("Multi-repo status")
+                .arg(
+                    Arg::new("verbose")
+                        .long("verbose")
+                        .short('v')
+                        .multiple_occurrences(true),
+                )
+                .arg(
+                    Arg::new("dirs")
+                        .long("dirs")
+                        .about("Only show directory names"),
+                ),
         );
 
     let matches = app.clone().get_matches();
@@ -41,7 +48,8 @@ fn main() -> Res<()> {
             1 => Verbosity::Info,
             _ => Verbosity::Debug,
         };
-        return mrs::command_multi_repo_status(verbosity);
+        let only_show_dirs = sm.occurrences_of("dirs") > 0;
+        return mrs::command_multi_repo_status(verbosity, only_show_dirs);
     }
 
     app.print_help().unwrap();
