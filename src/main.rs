@@ -32,7 +32,7 @@ fn main() -> Res<()> {
                 .arg(
                     Arg::new("dirs")
                         .long("dirs")
-                        .about("Only show directory names"),
+                        .help("Only show directory names"),
                 ),
         );
 
