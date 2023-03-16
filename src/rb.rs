@@ -41,7 +41,7 @@ pub fn command_rb() -> Res<()> {
                 }
 
                 let secs = entry.committer().when().seconds();
-                let dt = chrono::Utc.timestamp(secs, 0);
+                let dt = chrono::Utc.timestamp_opt(secs, 0).unwrap();
                 let local = chrono::DateTime::from(dt) as chrono::DateTime<chrono::Local>;
                 let dur = dt.sub(chrono::Utc::now());
                 let ago = format_age(&dur);

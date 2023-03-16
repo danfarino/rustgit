@@ -1,18 +1,18 @@
 [package]
 name = "rustgit"
-version = "1.1.1"
+version = "1.1.2"
 authors = ["Dan Farino <dan.farino@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-git2 = { version = "0.15.0", default-features = false }
-regex = "1.6.0"
-chrono = "0.4.22"
-clap = "3.2.22"
-anyhow = "1.0.65"
+git2 = { version = "0.16.1", default-features = false }
+regex = "1.7.1"
+chrono = "0.4.24"
+clap = "3.2.23"
+anyhow = "1.0.69"
 atty = "0.2.14"
-glob = "0.3.0"
+glob = "0.3.1"
 dirs = "4.0.0"
-shellexpand = "2.1.2"
+shellexpand = "3.0.0"

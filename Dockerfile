@@ -1,4 +1,4 @@
-FROM rust:1.63.0-slim-buster
+FROM rust:1.68.0-slim-buster
 
 WORKDIR /work
 
