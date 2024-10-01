@@ -1,11 +1,12 @@
-FROM rust:1.68.0-slim-buster
-
-WORKDIR /work
-
-COPY . .
+FROM rust:1.81-slim-bullseye
 
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     apt-get install -y pkg-config
 
-RUN cargo build --release
+WORKDIR /work
+
+COPY . .
+
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    cargo build --release

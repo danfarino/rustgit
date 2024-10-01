@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-[Install](https://www.rust-lang.org/learn/get-started) the Rust compiler. As of this writing, Rust `1.56.1` is the current version.
+[Install](https://www.rust-lang.org/learn/get-started) the Rust compiler. As of this writing, Rust `1.81` is the current version.
 
 ## Installation
 
