@@ -77,4 +77,4 @@ $ rustgit mrs
 
 In accordance with the Unix philosophy "*no news is good news*", if there are no unpushed branches or dirty working directories, there will be no output.
 
-If you'd like to see more detailed output, run `rustgit mrs -v` or `rustgit mrs -vv`. 
+If you'd like to see more detailed output, run `rustgit mrs -v` or `rustgit mrs -vv`.
