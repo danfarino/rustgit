@@ -27,6 +27,10 @@ pub fn command_multi_repo_status(verbosity: Verbosity, only_show_dirs: bool) -> 
         for glob_result in glob::glob(&shellexpand::tilde(&include_rule))? {
             let path = glob_result?;
 
+            if !path.join(".git").is_dir() {
+                continue;
+            }
+
             if exclude_patterns.iter().any(|p| p.matches_path(&path)) {
                 if verbosity >= Verbosity::Info {
                     println!("Excluded dir: {:?}", &path);
