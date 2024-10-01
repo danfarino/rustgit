@@ -14,10 +14,8 @@
 
 ```
 $ rustgit --help
-rustgit 1.0
-
+rustgit 1.1.3
 Dan Farino
-
 Dan's Rust-based Git utility
 
 USAGE:
